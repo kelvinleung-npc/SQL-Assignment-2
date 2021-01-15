@@ -1,0 +1,102 @@
+Part A) EXPLAIN ANALYZE
+relpages |  reltuples
+----------+-------------
+   32316 | 3.98478e+06
+
+1. select * from persons where firstname = ’Laura’
+ Gather  (cost=1000.00..54747.48 rows=6774 width=34) (actual time=0.334..244.285 rows=8254 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   ->  Parallel Seq Scan on persons  (cost=0.00..53070.08 rows=2822 width=34) (actual time=0.632..226.831 rows=2751 loops=3)
+         Filter: ((firstname)::text = 'Laura'::text)
+         Rows Removed by Filter: 1325523
+ Planning time: 0.100 ms
+ Execution time: 244.797 ms
+(8 rows)
+
+estimated: rows=6774 actual: rows=8254
+
+	2)a) Selectivity of where clause: 
+	select relpages, reltuples from pg_class where relname = 'persons';
+         2)A) selectivity from MCF = 0.0017
+	   B) 0.0017 * 3984780 = 6774
+		
+
+
+2. select * from persons where firstname IS NULL;
+ Gather  (cost=1000.00..57848.97 rows=79297 width=34) (actual time=0.346..238.417 rows=80185 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   ->  Parallel Seq Scan on persons  (cost=0.00..48919.27 rows=33040 width=34) (actual time=0.622..205.520 rows=26728 loops=3)
+         Filter: (firstname IS NULL)
+         Rows Removed by Filter: 1301546
+ Planning time: 0.087 ms
+ Execution time: 242.798 ms
+(8 rows)
+E = rows=79297 A = rows=80185
+	2)A)selectivity from nullfrac = 0.0199
+	  B) 0.0199 * 3984780 = 79297
+
+3. select * from persons where firstname = ’Alejandro’
+
+ Gather  (cost=1000.00..54091.38 rows=213 width=34) (actual time=16.118..231.812 rows=2246 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   ->  Parallel Seq Scan on persons  (cost=0.00..53070.08 rows=89 width=34) (actual time=7.706..216.003 rows=749 loops=3)
+         Filter: ((firstname)::text = 'Alejandro'::text)
+         Rows Removed by Filter: 1327526
+ Planning time: 2.714 ms
+ Execution time: 231.994 ms
+(8 rows)
+
+E = 213 A = 2246
+	2)A) Selectivity = (1 - sum(mvf))/(num_distinct - num_mcv)
+	     (1 - 0.21716667 - 0.0199)/(14399 - 100) = 0.0000533557122876
+	  B) 3984780 * 0.0000533557122876 = 213
+4. select * from persons where firstname IS NULL or firstname = ’Alejandro’;
+
+ Gather  (cost=1000.00..62020.68 rows=79506 width=34) (actual time=0.269..232.731 rows=82431 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   ->  Parallel Seq Scan on persons  (cost=0.00..53070.08 rows=33128 width=34) (actual time=0.481..199.816 rows=27477 loops=3)
+         Filter: ((firstname IS NULL) OR ((firstname)::text = 'Alejandro'::text))
+         Rows Removed by Filter: 1300798
+ Planning time: 0.086 ms
+ Execution time: 236.533 ms
+(8 rows)
+       
+E = 79506 A = 82431
+	 2) A) 0.0000533557122876 + 0.0199 = 0.0199533557123
+           B) 79297 + 213 (from previous calculations) = 79510
+
+
+
+
+5. select * from persons where firstname < ’Alejandro’;
+
+ Gather  (cost=1000.00..62049.78 rows=79797 width=34) (actual time=0.373..361.856 rows=81547 loops=1)
+   Workers Planned: 2
+   Workers Launched: 2
+   ->  Parallel Seq Scan on persons  (cost=0.00..53070.08 rows=33249 width=34) (actual time=0.669..326.496 rows=27182 loops=3)
+         Filter: ((firstname)::text < 'Alejandro'::text)
+         Rows Removed by Filter: 1301092
+ Planning time: 1.934 ms
+ Execution time: 366.082 ms
+(8 rows)
+
+E = 79797 A = 81547
+
+	2) A)Selectivity = (2 - 0.0199)/100 assuming linear distribution on bucket boundary = 0.019801
+	   B) 0.019801 * 3984780 = 78903
+
+
+
+
+
+
+PART B) 
+
+On a dense index, if the height of the index tree, the blocks in the index and matching a key value to read every block 
+outweighs the cost of the B(R) (the blocks of the relationship) then running a sequential scan will be more efficient. In this case 
+the query is big enough that seq scan is faster. 
+
