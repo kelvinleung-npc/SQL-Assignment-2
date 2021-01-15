@@ -1,0 +1,119 @@
+1)
+
+select title, pid, year, rank
+From Productions inner join ratings
+on productions.id = ratings.id
+inner join directors
+on directors.id = ratings.id
+where directors.pid in (select pid from persons where lastname ='Bigelow' and gender = 'F') and ratings.votes >=50000 and productions.attr is null;
+2)
+with Granger as (
+select productions.id as title, year, rank, character, billing, roles.pid
+from productions
+inner join ratings on productions.id = ratings.id
+inner join roles on roles.id = ratings.id
+where roles.character !~'^Herself' and productions.attr is null 
+and pid in (select pid from roles where pid = 'Watson, Emma (II)')
+),
+Harry as (
+select productions.id as title, year, rank, character, billing, roles.pid
+from productions
+inner join ratings on productions.id = ratings.id
+inner join roles on roles.id = ratings.id
+where productions.attr is null and character !~ '^Himself'
+and pid in (select pid from roles where pid = 'Radcliffe, Daniel')
+)
+select Harry.title, Harry.year, Granger.rank,
+Granger.character as emmachar, Granger.billing as emmabilling, Harry.character as danielchar, Harry.billing as danielbilling
+from Granger inner join Harry on Granger.title = Granger.title;
+
+3)select DISTINCT productions.id, productions.year
+from productions inner join 
+(select * from episodes inner join (select * 
+from locations where location = 'Victoria, British Columbia') as eplocation
+on episodes.id = eplocation.id) as vicep
+on vicep.episodeof = productions.id
+where productions.year >= 2000; 
+
+4)
+select directors.pid, productions.id, rank
+from productions
+inner join languages on productions.id = languages.id
+inner join directors on directors.id = productions.id
+left outer join ratings on ratings.id = productions.id
+where language='English' and attr is null
+and pid in (select pid from directors where id in (select id from episodes where episodeof='"Hora Marcada" (1986)'));
+
+5) 
+With G as (select id from productions where id in (select id from directors where pid = 'Lucas, George (I)') and attr is null),
+K as (select id from productions where id in (select id from directors where pid = 'Kurosawa, Akira')and attr is null)
+select id as lucas, idlinkedto as kurosaka, relationship From links 
+where id in (select id from G) and idlinkedto in(select id from K);
+
+6) 
+
+select title, year, rank, votes
+from productions inner join Ratings
+on productions.id = ratings.id
+where productions.attr is null and ratings.votes >= 50000
+and Ratings.rank in (select Max(rank) From ratings where votes >= 50000 and id in (select id from productions where a
+ttr is null));
+
+7) 
+
+with simpson as (select * from ratings inner join episodes
+on ratings.id = episodes.id where episodes.episodeof = '"The Simpsons" (1989)')
+select season, count(season) as numep, max(rank) as maxrank, min(rank) as minrank, 
+avg(rank) as avgrank, sum(votes) as totalvotes from simpson group by season;
+
+8)
+
+with restriction as (select productions.id, ratings.rank, ratings.votes from productions inner join ratings
+on productions.id = ratings.id
+where ratings.rank >= 8 and
+ratings.votes >= 50000 and productions.attr is null)
+select pid, count(pid), avg(rank)
+from roles join restriction
+on roles.id = restriction.id
+where pid = 'McGowan, Mickie' or pid = 'Flowers, Bess' or pid = 'Lynn, Sherry (I)'
+group by pid order by avg asc;
+
+9)
+with movies as (select pid, count(pid) as amount 
+From productions inner join Ratings 
+on productions.id = ratings.id 
+inner join roles 
+on ratings.id = roles.id 
+where productions.attr is null and ratings.votes >= 250000
+group by pid) 
+select roles.pid, roles.id, roles.billing, roles.character, ratings.rank 
+From productions inner join Ratings 
+on productions.id = ratings.id 
+inner join roles 
+on ratings.id = roles.id 
+where productions.attr is null and ratings.votes >= 250000 and 
+pid in (select pid from movies where amount = (select max(amount) from movies));  
+
+
+
+Tables: 
+Episodes:
+(id, subtitle, season, epnumber,episodeof)
+
+Productions:
+(id(character varying(400)), title(character varying(250)), year(integer), 
+index(character varying(8)), notes( character varying(500)), attr (character varying(10))(null for movies)) 
+
+Directors:
+(id (character varying(400)) , pid(character varying(200)), dnote(character varying(500))) 
+
+Roles:
+(id(character varying(400)), pid(character varying(200)), 
+character (character varying), billing (integer), snote (character varying(200)) 
+
+Ratings:
+(id (character varying(400)), dist(character(10)), votes(integer), ranking(double precision))
+
+Persons:
+(pid(character varying(200)), lastname (character varying(150)), 
+firstname( character varying(100)), pindex(character varying(10), gender(character(1))
