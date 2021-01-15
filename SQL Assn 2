@@ -1,0 +1,40 @@
+1)
+SELECT id,location FROM locations WHERE location = 'University of Victoria, Victoria, British Columbia';
+
+
+2)
+Select id From productions where year >= 1991 and year <= 2009
+intersect
+select id from directors where pid = 'Cameron, James (I)'
+union
+select id from productions where year = 1997
+intersect
+select id from roles where pid = 'Winslet, Kate';
+
+3) with movie as (select id from productions where attr is null)
+select id from movie where id in (select id from directors where pid = 'Eastwood, Clint')
+intersect
+select id from movie where id in (select id from roles where pid = 'Eastwood, Clint');
+
+
+4) select id from directors where pid = 'Eastwood, Clint'
+except select id from roles where pid = 'Eastwood, Clint'; 
+
+
+
+5) select id, character, billing from roles where pid = 'Eastwood, Clint' and id in(select id from directors where pid = 'Leone, Sergio (I)');
+
+
+6)
+select id,pid,character from roles where pid in (Select pid from roles where id = 'The Matrix (1999)'
+intersect
+select pid from roles where id = 'The Matrix Reloaded (2003)') and (id = 'The Matrix (1999)' or id = 'The Matrix Reloaded (2003)');
+
+
+7)with harrypotter as (select id from roles where pid = 'Watson, Emma (II)'
+intersect
+select id from roles where pid = 'Radcliffe, Daniel'),
+movies as (select id from productions where attr is NULL)
+select id,pid from directors where id in (select id from harrypotter)
+intersect
+select id,pid from directors where id in (select id from movies);
